@@ -265,6 +265,9 @@
   .nav-date { margin-left: 14px; padding: 2px 10px; border: 1px solid rgba(31,95,209,.25); border-radius: 999px; color: var(--blue); font: 500 12px/1.6 var(--sans); white-space: nowrap; }
   .nav-left { display: flex; align-items: center; }
   @media (max-width: 720px) { .nav-date { display: none; } .browser-view { max-height: 380px; } }
+  .tau { font-weight: 700; font-size: 1.2em; font-family: "Times New Roman", serif; font-style: italic; }
+  .names sup, .affs sup { font-family: var(--sans); line-height: 0; }
+  .tau { line-height: 0; }
 </style>
 </head>
 <body>
@@ -290,9 +293,9 @@
     </div>
     <div class="people">
       <p class="names">
-        <span>David Nukrai<sup>1*</sup></span><span>Bar Alon<sup>1,2*</sup></span><span>Nativ Levy<sup>1</sup></span><span>Ido Andrew Atad<sup>1</sup></span><span>Ido Cohen<sup>1</sup></span><span>Itamar Zimerman<sup>1</sup></span><span>Lior Wolf<sup>2</sup></span><span>Eli David<sup>1</sup></span><span>Ilan Naiman<sup>1</sup></span>
+        <span>David Nukrai<sup>Δ*</sup></span><span>Bar Alon<sup>Δ,<b class="tau">τ</b>*</sup></span><span>Nativ Levy<sup>Δ</sup></span><span>Ido Andrew Atad<sup>Δ</sup></span><span>Ido Cohen<sup>Δ</sup></span><span>Itamar Zimerman<sup>Δ</sup></span><span>Lior Wolf<sup><b class="tau">τ</b></sup></span><span>Eli David<sup>Δ</sup></span><span>Ilan Naiman<sup>Δ</sup></span>
       </p>
-      <p class="affs"><span><sup>1</sup>Stealth Startup, Tel Aviv</span><span><sup>2</sup>Tel Aviv University</span><span><sup>*</sup>Equal contribution</span></p>
+      <p class="affs"><span><sup>Δ</sup>Stealth Startup, Tel Aviv</span><span><sup><b class="tau">τ</b></sup>Tel Aviv University</span><span><sup>*</sup>Equal contribution</span></p>
     </div>
   </div>
   <div class="teaser">
