@@ -334,7 +334,7 @@
 
 <h2 id="scoring">Scored for real users</h2>
 
-<p>Most sequential benchmarks stop at the first failure, as if every user quits right away. Others score every request, as if no one ever quits. EvoWeb instead averages over every level of patience. Drag the slider to see how much of this app a user with a given tolerance actually gets.</p>
+<p>Most sequential benchmarks stop at the first failure, as if every user quits right away. Others score every request, as if no one ever quits. EvoWeb instead averages over every level of patience. Drag the slider to see how much of an app a user with a given tolerance actually gets.</p>
 
 <figure id="tol-fig">
   <div class="tol">
@@ -360,7 +360,7 @@
     </div>
     <p class="tol-say" id="tol-say" aria-live="polite"></p>
   </div>
-  <figcaption><b>Grade averages over every user.</b> The user leaves after the first request that scores below their tolerance (red), and never sees the requests after it (grey). The area under the curve on the right is the Grade.</figcaption>
+  <figcaption><b>Grade averages over every user.</b> Illustrative scores for one ten-request trajectory. The user leaves after the first request that scores below their tolerance (red), and never sees the requests after it (grey). The area under the curve on the right is the Grade.</figcaption>
 </figure>
 
 <h2 id="multilingual">Not everyone asks in English</h2>
@@ -499,7 +499,8 @@ python3 -m evoweb.score_run runs/haiku</code></pre></div>
   render(0);
 
   /* ---------- Figure 3: tolerance ---------- */
-  const A = W.map(r => r.acc), R = A.length, NS = 'http://www.w3.org/2000/svg';
+  const A = [0.95, 0.85, 0.9, 0.7, 0.8, 0.55, 0.75, 0.4, 0.65, 0.6], R = A.length,  // illustrative trajectory, not the walkthrough app
+    NS = 'http://www.w3.org/2000/svg';
   const GRADE = (() => { let m = 1, g = 0; A.forEach(a => { g += a * m; m = Math.min(m, a); }); return g / A.length; })();
   document.getElementById('s-grade').textContent = GRADE.toFixed(3);
   const reachedAt = t => { const g = []; let m = 1; for (let r = 0; r < R; r++) { g.push(m >= t - 1e-9); m = Math.min(m, A[r]); } return g; };
