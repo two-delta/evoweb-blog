@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EvoWeb: A Benchmark for Coding Agents on Evolving Web Applications</title>
+<meta name="description" content="EvoWeb: 320 cumulative requests over 32 web apps. Coding agents keep extending the app they built, and a browser agent tests every intermediate version.">
+<meta property="og:title" content="EvoWeb: A Benchmark for Coding Agents on Evolving Web Applications">
+<meta property="og:description" content="Coding agents build a web app, then keep extending it request after request. Can they keep it working?">
+<meta property="og:image" content="https://two-delta.github.io/evoweb-blog/figures/method.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>%F0%9F%8C%B1</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f1b2d; --muted: rgba(15, 27, 45, .62); --faint: rgba(15, 27, 45, .12);
+    --blue: #1f5fd1; --blue-soft: #e7effd; --bg: #ffffff; --code-bg: #f4f7fc; --gold: #e3a21a;
+    --yes: #1d8a4e; --yes-soft: #e3f4ea; --part: #b07800; --part-soft: #fdf2d8; --no: #c0392b; --no-soft: #fbe6e3;
+    --a-base: #8e9a9b; --a-derived: #3a87c0; --a-tool: #37b36b; --a-workflow: #9450b5; --a-restyle: #d95f14;
+    --sans: "Roboto", system-ui, sans-serif; --mono: "Roboto Mono", ui-monospace, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 300 17px/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+  a { color: var(--blue); text-decoration: none; border-bottom: 1px solid rgba(31, 95, 209, .35); }
+  a:hover { border-bottom-color: var(--blue); }
+  b, strong { font-weight: 500; }
+  code { font: 400 .87em var(--mono); color: var(--blue); }
+
+  .nav { position: sticky; top: 0; z-index: 10; background: #fff; border-bottom: 1px solid var(--faint); }
+  .nav-inner { max-width: 1040px; margin: 0 auto; padding: 12px 24px; display: flex; justify-content: space-between; align-items: baseline; gap: 16px; font-size: 16px; }
+  .nav-inner .brand { font-weight: 700; color: var(--ink); border: 0; white-space: nowrap; }
+  .nav-inner .brand span { font-weight: 300; }
+  .nav-links { display: flex; gap: 20px; flex-wrap: wrap; }
+  .nav-links a { color: var(--ink); border: 0; font-weight: 400; }
+  .nav-links a:hover { color: var(--blue); }
+
+  .title { max-width: 700px; margin: 0 auto; padding: 48px 24px 28px; }
+  .title h1 { margin: 0 0 14px; font: 700 50px/1.1 var(--sans); letter-spacing: -.01em; }
+  .title p { margin: 0; font-size: 19px; line-height: 1.55; }
+  .byline { border-top: 1px solid var(--faint); border-bottom: 1px solid var(--faint); padding: 20px 24px; font-size: 12.8px; line-height: 1.8; }
+  .byline-grid { max-width: 652px; margin: 0 auto; display: grid; grid-template-columns: 1.3fr 1.4fr 1fr; gap: 0 24px; }
+  .byline h3 { margin: 0 0 6px; font: 500 10px/1.5 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .byline .author { font-weight: 500; }
+  .byline sup { font-size: .7em; color: var(--muted); margin-left: 1px; }
+  .byline .aff, .byline .muted { color: var(--muted); }
+
+  main { max-width: 700px; margin: 0 auto; padding: 8px 24px 56px; }
+  main > p, main li { hyphens: auto; }
+  .lead-links { font-style: italic; }
+  h2 { margin: 56px 0 18px; padding-bottom: 10px; border-bottom: 1px solid var(--faint); font: 600 34px/1.25 var(--sans); }
+  h3 { margin: 36px 0 14px; font: 600 22px/1.35 var(--sans); }
+  h2, h3 { scroll-margin-top: 64px; }
+  figure { margin: 32px 0; }
+  figure.wide { margin-left: calc(50% - min(48vw, 520px)); margin-right: calc(50% - min(48vw, 520px)); }
+  figure img, figure video { display: block; width: 100%; height: auto; border-radius: 6px; }
+  figure video { border: 1px solid var(--faint); background: var(--code-bg); }
+  figcaption { max-width: 700px; margin: 12px auto 0; font-size: 13px; line-height: 1.5; color: var(--muted); }
+  figcaption b { color: var(--ink); font-weight: 500; }
+  .eq { margin: 22px 0; padding: 14px 18px; background: var(--code-bg); border-left: 3px solid var(--blue); font: 400 15px/1.8 var(--mono); overflow-x: auto; }
+  .eq var { font-style: italic; font-family: "Times New Roman", serif; font-size: 17px; }
+  .note { padding: 14px 18px; background: var(--blue-soft); border-radius: 6px; font-size: 15.5px; }
+  blockquote.q { margin: 26px 0; padding: 2px 0 2px 18px; border-left: 3px solid var(--blue); font-size: 19px; line-height: 1.55; font-style: italic; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .table-wrap { overflow-x: auto; margin: 24px 0 8px; }
+  .table-wrap.wide { margin-left: calc(50% - min(48vw, 460px)); margin-right: calc(50% - min(48vw, 460px)); }
+  th, td { padding: 7px 10px; border-bottom: 1px solid var(--faint); text-align: right; white-space: nowrap; }
+  th { font-weight: 500; font-size: 12px; letter-spacing: .03em; color: var(--muted); border-bottom: 1px solid rgba(15, 27, 45, .3); }
+  th:first-child, td:first-child { text-align: left; }
+  td.ours { color: var(--blue); font-weight: 500; background: var(--blue-soft); }
+  tr.top td { font-weight: 500; }
+  .bar-cell { min-width: 170px; width: 30%; }
+  .bar { display: grid; grid-template-columns: 42px 1fr; gap: 10px; align-items: center; }
+  .bar span { text-align: right; }
+  .bar b { display: block; height: 10px; border-radius: 2px; background: var(--faint); overflow: hidden; }
+  .bar b i { display: block; height: 100%; background: var(--blue); opacity: .75; }
+  tr.top .bar b i { opacity: 1; }
+  .tag { display: inline-block; margin-left: 6px; padding: 0 5px; border: 1px solid var(--faint); border-radius: 3px; font: 500 9.5px/1.5 var(--mono); letter-spacing: .04em; color: var(--muted); vertical-align: 1px; }
+  .lowest { color: var(--no); font-weight: 500; }
+
+  pre { margin: 22px 0; padding: 14px 16px; background: var(--code-bg); border: 1px solid var(--faint); border-radius: 6px; overflow-x: auto; font: 400 13px/1.6 var(--mono); }
+  pre code { color: var(--ink); font-size: inherit; }
+  .card { margin: 24px 0; border: 1px solid var(--faint); border-radius: 8px; overflow: hidden; }
+  .card-head { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--code-bg); border-bottom: 1px solid var(--faint); font: 500 11px var(--mono); letter-spacing: .06em; color: var(--muted); }
+  .card-head button { font: 500 10px var(--mono); letter-spacing: .06em; padding: 4px 8px; border: 1px solid var(--faint); border-radius: 4px; background: #fff; color: var(--ink); cursor: pointer; }
+  .card pre { margin: 0; border: 0; border-radius: 0; background: #fff; }
+
+  ul.findings { padding-left: 20px; }
+  ul.findings li { margin: 8px 0; }
+
+  /* ---------- Walkthrough ---------- */
+  .walk { border: 1px solid var(--faint); border-radius: 10px; overflow: hidden; background: #fff; }
+  .steps { display: grid; grid-template-columns: repeat(10, 1fr); border-bottom: 1px solid var(--faint); background: var(--code-bg); }
+  .step { appearance: none; border: 0; border-right: 1px solid var(--faint); background: transparent; padding: 10px 2px 8px; cursor: pointer; font: 500 12px/1.2 var(--mono); color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .step:last-child { border-right: 0; }
+  .step .dot { width: 9px; height: 9px; border-radius: 50%; }
+  .step .acc { width: 70%; height: 4px; background: var(--faint); border-radius: 2px; overflow: hidden; }
+  .step .acc i { display: block; height: 100%; }
+  .step:hover { color: var(--ink); }
+  .step.on { background: #fff; color: var(--ink); box-shadow: inset 0 -3px 0 var(--blue); }
+  .walk-body { display: grid; grid-template-columns: 1.15fr 1fr; gap: 0; }
+  .shot { padding: 16px; border-right: 1px solid var(--faint); background: #fafbfd; }
+  .shot-in { position: sticky; top: 64px; }
+  .shot img { display: block; width: 100%; height: auto; border: 1px solid var(--faint); border-radius: 4px; background: #fff; }
+  .shot .cap { margin-top: 8px; font-size: 12px; line-height: 1.45; color: var(--muted); }
+  .panel { padding: 16px 18px 18px; min-width: 0; }
+  .panel h4 { margin: 0; font: 600 18px/1.3 var(--sans); }
+  .meta { margin: 6px 0 10px; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 12px; color: var(--muted); }
+  .chip { display: inline-flex; align-items: center; gap: 5px; padding: 1px 8px; border-radius: 10px; font: 500 11px/1.6 var(--sans); color: #fff; }
+  .req { position: relative; margin: 0 0 12px; padding: 10px 12px; background: var(--code-bg); border-radius: 6px; font-size: 13.5px; line-height: 1.55; max-height: 9.5em; overflow: hidden; }
+  .req.open { max-height: none; }
+  .req:not(.open)::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2.6em; background: linear-gradient(rgba(244, 247, 252, 0), var(--code-bg)); }
+  .req-toggle { appearance: none; border: 0; background: none; padding: 0; margin: -6px 0 12px; font: 500 12px var(--sans); color: var(--blue); cursor: pointer; }
+  .src { font-size: 12px; color: var(--muted); margin: 0 0 12px; }
+  .checks { list-style: none; margin: 0; padding: 0; }
+  .check { padding: 8px 0; border-top: 1px solid var(--faint); font-size: 13.5px; line-height: 1.45; }
+  .check { cursor: pointer; }
+  .check .exp { display: none; }
+  .check.show .exp, .check.fail .exp { display: block; }
+  .check.clickable:hover .task { color: var(--blue); }
+  .check.sel .task { color: var(--blue); }
+  .check-top { display: flex; gap: 8px; align-items: flex-start; }
+  .v { flex: none; width: 62px; text-align: center; padding: 1px 0; border-radius: 4px; font: 500 10.5px/1.7 var(--mono); letter-spacing: .04em; }
+  .v.yes { color: var(--yes); background: var(--yes-soft); }
+  .v.partial { color: var(--part); background: var(--part-soft); }
+  .v.no { color: var(--no); background: var(--no-soft); }
+  .ty { display: block; font: 500 10px/1.6 var(--mono); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+  .exp { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+  .jnote { display: block; margin-top: 5px; padding: 6px 9px; border-left: 2px solid var(--no); background: #fff7f6; font-size: 12.5px; color: var(--ink); }
+  .jnote.partial { border-left-color: var(--part); background: #fffbf1; }
+  .score { margin-top: 12px; display: flex; align-items: center; gap: 10px; font: 400 12.5px var(--mono); color: var(--muted); }
+  .score .track { flex: 1; height: 8px; border-radius: 4px; background: var(--faint); overflow: hidden; }
+  .score .track i { display: block; height: 100%; background: var(--blue); }
+  .walk-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 16px; border-top: 1px solid var(--faint); background: var(--code-bg); font-size: 12px; color: var(--muted); }
+  .walk-foot button { font: 500 11px var(--mono); letter-spacing: .04em; padding: 5px 10px; border: 1px solid var(--faint); border-radius: 4px; background: #fff; color: var(--ink); cursor: pointer; }
+  .walk-foot button:disabled { opacity: .4; cursor: default; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+
+  /* ---------- Tolerance widget ---------- */
+  .tol { border: 1px solid var(--faint); border-radius: 10px; padding: 18px 18px 14px; }
+  .tol-ctl { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 14px; }
+  .tol-ctl label { font-weight: 500; }
+  .tol-ctl input[type=range] { flex: 1; min-width: 180px; accent-color: var(--blue); }
+  .tol-ctl output { font: 500 14px var(--mono); min-width: 52px; color: var(--blue); }
+  .presets { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .presets button { font: 400 12px var(--sans); padding: 3px 9px; border: 1px solid var(--faint); border-radius: 12px; background: #fff; color: var(--ink); cursor: pointer; }
+  .presets button:hover { border-color: var(--blue); color: var(--blue); }
+  .tol-grid { display: grid; grid-template-columns: 1.35fr 1fr; gap: 18px; margin-top: 12px; align-items: start; }
+  .tol svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .tol .stat { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
+  .tol .stat div { padding: 8px 10px; border-radius: 6px; background: var(--code-bg); }
+  .tol .stat b { display: block; font: 500 18px/1.2 var(--mono); }
+  .tol .stat span { font-size: 11.5px; color: var(--muted); line-height: 1.3; display: block; }
+  .tol .stat .hl { background: var(--blue-soft); }
+  .tol .stat .hl b { color: var(--blue); }
+  .tol-say { margin: 12px 0 0; font-size: 14px; line-height: 1.55; min-height: 3.1em; }
+  svg text { font-family: var(--mono); }
+
+  footer { border-top: 1px solid var(--faint); padding: 24px; text-align: center; font-size: 13px; color: var(--muted); }
+  @media (max-width: 860px) {
+    .walk-body { grid-template-columns: 1fr; }
+    .shot { border-right: 0; border-bottom: 1px solid var(--faint); }
+    .tol-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    body { font-size: 16px; }
+    .nav-inner { padding: 10px 16px; font-size: 14px; } .nav-links { gap: 12px; }
+    .title { padding: 32px 16px 20px; } .title h1 { font-size: 34px; } .title p { font-size: 17px; }
+    .byline { padding: 16px; } .byline-grid { grid-template-columns: 1fr; gap: 12px; }
+    main { padding: 8px 16px 48px; }
+    h2 { font-size: 27px; } h3 { font-size: 20px; }
+    figure.wide, .table-wrap.wide { margin-left: 0; margin-right: 0; }
+    .steps { grid-template-columns: repeat(5, 1fr); }
+    .step:nth-child(5) { border-right: 0; } .step:nth-child(-n+5) { border-bottom: 1px solid var(--faint); }
+    .tol .stat { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<nav class="nav"><div class="nav-inner">
+  <a class="brand" href="#">🌱 EvoWeb <span>blog</span></a>
+  <div class="nav-links">
+    <a href="https://arxiv.org/abs/2610.16402">paper</a>
+    <a href="https://github.com/two-delta/EvoWeb">code</a>
+    <a href="https://huggingface.co/datasets/TD-Labs/EvoWeb">dataset</a>
+  </div>
+</div></nav>
+
+<header class="title">
+  <h1>A Benchmark for Coding Agents on Evolving Web Applications</h1>
+  <p>We introduce EvoWeb: 320 cumulative requests over 32 web apps. A coding agent builds an app and then keeps extending it, request after request, while a browser agent tests every intermediate version.</p>
+</header>
+
+<div class="byline"><div class="byline-grid">
+  <div>
+    <h3>Authors</h3>
+    <div class="author">David Nukrai<sup>1*</sup></div>
+    <div class="author">Bar Alon<sup>1,2*</sup></div>
+    <div class="author">Nativ Levy<sup>1</sup></div>
+    <div class="author">Ido Andrew Atad<sup>1</sup></div>
+    <div class="author">Ido Cohen<sup>1</sup></div>
+    <div class="author">Itamar Zimerman<sup>1</sup></div>
+    <div class="author">Lior Wolf<sup>2</sup></div>
+    <div class="author">Eli David<sup>1</sup></div>
+    <div class="author">Ilan Naiman<sup>1</sup></div>
+  </div>
+  <div>
+    <h3>Affiliations</h3>
+    <div class="aff"><sup>1</sup>Stealth Startup, Tel Aviv</div>
+    <div class="aff"><sup>2</sup>Tel Aviv University</div>
+    <div class="aff" style="margin-top:6px"><sup>*</sup>Equal contribution</div>
+  </div>
+  <div>
+    <h3>Published</h3>
+    <div class="muted">Oct. 15, 2026</div>
+  </div>
+</div></div>
+
+<main>
+
+<p class="lead-links">The full paper is on arXiv: <a href="https://arxiv.org/abs/2610.16402">arxiv.org/abs/2610.16402</a>.</p>
+<p class="lead-links">The harness, scoring code and the released runs: <a href="https://github.com/two-delta/EvoWeb">github.com/two-delta/EvoWeb</a>. The 32 apps, their requests and tests: <a href="https://huggingface.co/datasets/TD-Labs/EvoWeb">huggingface.co/datasets/TD-Labs/EvoWeb</a>.</p>
+
+<h2 id="bottom-line">The bottom line</h2>
+
+<p>Real app development does not stop at the first prompt. People come back to add a feature, change how something behaves, or build on something they asked for last week. Each request lands on code the agent wrote earlier, and it may need that code to keep working.</p>
+
+<p>We evaluated 14 coding models on EvoWeb, each running as an OpenHands agent. <b>No model keeps an app working across the whole trajectory.</b> Fable 5 and Kimi K3 lead with Grades of 0.694 and 0.684, a gap within run-to-run noise. The best models survive about 7.3 of 10 requests, and the weakest reaches a Grade of only 0.162.</p>
+
+<div class="table-wrap wide">
+<table id="leaderboard">
+  <thead><tr><th>Model</th><th class="bar-cell">Grade ↑</th><th>Survival ↑</th><th>Turns / req.</th><th>$ / app</th><th>Runtime err.</th></tr></thead>
+  <tbody></tbody>
+</table>
+</div>
+<figcaption style="margin-left:0">Table 1. Grade (0–1) and Survival (requests out of 10) average performance over every level of user patience, explained <a href="#scoring">below</a>. Closed models: mean of three runs. Open-weight models (<span class="tag" style="margin:0">OPEN</span>): one run. $ / app is the generation cost of one 10-request app, excluding the judge. Runtime err. is the share of requests after which the served app throws in the browser.</figcaption>
+
+<p>Three findings stand out:</p>
+<ul class="findings">
+  <li><b>Making features work together is the hard part.</b> For every model, tests that combine a new feature with an earlier one score lowest, below tests of the new feature alone and re-tests of old ones.</li>
+  <li><b>Difficulty compounds along dependencies.</b> Late requests that build on longer chains, or on more earlier features, are solved less often.</li>
+  <li><b>Apps keep building but stop running.</b> Build failures stay rare, but runtime errors climb with every request, from 2% after the first request to about 12% by the last.</li>
+</ul>
+
+<h2 id="why">Why evolving apps</h2>
+
+<p>Tools like Bolt.new and Lovable let people with little or no programming background describe an app and get a working one. The user describes what they want, and the agent decides how to build it. But the first request is rarely the last. A request may depend on state, interfaces or behavior the same agent built several requests earlier. A new feature may work on its own and fail once it has to use that older code, or it may quietly break something that used to work.</p>
+
+<p>Existing web-generation benchmarks score an app built from a single request, or refine an app toward a specification that is fixed in advance. Multi-request benchmarks exist for repository-level software engineering, but not for user-facing apps that grow one request at a time. That leaves one question open:</p>
+
+<blockquote class="q">How reliably can coding agents extend a persistent application over successive user requests while integrating with previously implemented functionality and preserving existing behavior?</blockquote>
+
+<h2 id="example">One app, ten requests</h2>
+
+<p>Here is one real trajectory from the benchmark: app 1, a stock-report generator, built by Opus 4.8. The first request is the original WebGen-Bench prompt. Nine follow-ups grow it into a small investing workspace with a screener, a watchlist, positions, ratings, alerts, transcript search, a comparison tool, a dark theme and a dashboard. Each feature is adapted from a real product, Koyfin or Simply Wall St. The follow-ups also form a dependency graph: positions need the watchlist, and the watchlist needs the screener.</p>
+
+<figure class="wide">
+  <img src="figures/dag.png" alt="Dependency DAG of the stock-report app: R1 base app feeds R2 screener, R5 ratings and R7 transcript search; R2 feeds R3 watchlist; R3 feeds R4 positions, R6 alerts, R9 restyle and R10 dashboard; R5 feeds R8 compare, R9 and R10." loading="lazy">
+  <figcaption><b>Figure 1. The requests of one app form a dependency graph.</b> An edge means the later feature cannot work unless the earlier one was built correctly. Colors mark the feature archetype. The graph is used to write tests and is never shown to the agent.</figcaption>
+</figure>
+
+<p>Step through what happened. After every request, the judge (a browser agent) opens the running app and runs five checks: three on the new feature, one that crosses a dependency edge, and one copied from an earlier request. The screenshots are what the judge actually saw, with the numbered element labels it acts on. Click a check to see its expected result, and click a failed one to see its screenshot.</p>
+
+<figure class="wide" id="walk-fig">
+  <div class="walk" id="walk">
+    <div class="steps" id="steps" role="tablist" aria-label="Requests"></div>
+    <div class="walk-body">
+      <div class="shot"><div class="shot-in"><img id="shot-img" alt="" width="768" height="375"><div class="cap" id="shot-cap"></div></div></div>
+      <div class="panel" id="panel"></div>
+    </div>
+    <div class="walk-foot">
+      <div class="legend">
+        <span><i style="background:var(--a-base)"></i>Base app</span>
+        <span><i style="background:var(--a-derived)"></i>Derived state</span>
+        <span><i style="background:var(--a-tool)"></i>Interactive tool</span>
+        <span><i style="background:var(--a-workflow)"></i>Multi-page workflow</span>
+        <span><i style="background:var(--a-restyle)"></i>Design restyle</span>
+      </div>
+      <div style="display:flex;gap:6px"><button id="prev" aria-label="Previous request">← PREV</button><button id="next" aria-label="Next request">NEXT →</button></div>
+    </div>
+  </div>
+  <figcaption><b>Figure 2. Opus 4.8 on app 1, run 1, request by request.</b> Request texts, checks, verdicts and screenshots are taken unchanged from the released example run (<code>examples_artifacts/examples.zip</code> in the repository). A request's accuracy counts PARTIAL as half a pass. The short notes summarize the judge's own reasoning.</figcaption>
+</figure>
+
+<p>Requests 1 and 2 go well. Request 3 is where it breaks. The screener table grows too wide, and the add-to-watchlist controls end up clipped at its right edge. The watchlist page works and so do most of its checks, but the check that crosses the screener-to-watchlist edge fails. At request 4 the same bug fails again: the integration check needs to add Baltic Freight from the screener, and the backward check, copied from request 3, still finds no "already saved" message. A separate NaN-handling bug costs one more check. One problem at the boundary between two features turns into three failures across two requests.</p>
+
+<p>Then the app recovers: request 5 scores 100%, and so do four of the last five requests. Whether that recovery counts depends on what you assume about the user.</p>
+
+<h2 id="scoring">Scoring: how patient is your user?</h2>
+
+<p>A sequential benchmark has to decide what happens after a bad request. Most stop at the first failure. That assumes the user leaves immediately, so the app above would be scored on request 1 alone. Scoring every request independently assumes the opposite: a user who keeps going no matter how bad things get. Neither extreme is how people behave, and the patience of the people who will use an agent is unknown.</p>
+
+<p>We do not choose a stopping rule. Each request <var>r</var> gets an accuracy <var>a<sub>r</sub></var>, its mean test score with PARTIAL counted as ½. A user with tolerance <var>t</var> keeps going while every request so far scored at least <var>t</var>. <em>Delivered functionality</em> <var>Q</var>(<var>t</var>) averages the accuracy of the requests that user reaches, and unreached requests count as zero. <em>Request survival</em> <var>S</var>(<var>t</var>) counts consecutive requests, from the first, that clear <var>t</var>. Agents run all ten requests regardless of score, so every threshold can be replayed afterwards and the result averaged over all of them:</p>
+
+<div class="eq">Grade = ∫<sub>0</sub><sup>1</sup> <var>Q</var>(<var>t</var>) d<var>t</var> = (1/<var>R</var>) Σ<sub><var>r</var></sub> <var>a<sub>r</sub></var> · <var>m</var><sub><var>r</var>−1</sub>,&nbsp;&nbsp;&nbsp; Survival = ∫<sub>0</sub><sup>1</sup> <var>S</var>(<var>t</var>) d<var>t</var> = Σ<sub><var>r</var></sub> <var>m<sub>r</sub></var>,&nbsp;&nbsp;&nbsp; <var>m<sub>r</sub></var> = min<sub><var>j</var>≤<var>r</var></sub> <var>a<sub>j</sub></var></div>
+
+<p>Drag the slider to change the user's patience for the app above:</p>
+
+<figure id="tol-fig">
+  <div class="tol">
+    <div class="tol-ctl">
+      <label for="tol-range">User tolerance <var>t</var></label>
+      <input type="range" id="tol-range" min="0" max="100" step="1" value="60" aria-describedby="tol-say">
+      <output id="tol-out">60%</output>
+    </div>
+    <div class="presets">
+      <button data-t="0">Tolerates anything (t = 0)</button>
+      <button data-t="75">Moderate (t = 75%)</button>
+      <button data-t="100">Leaves at the first flaw (t = 1)</button>
+    </div>
+    <div class="tol-grid">
+      <svg id="ladder" viewBox="0 0 420 220" role="img" aria-label="Per-request accuracy with tolerance line"></svg>
+      <svg id="qcurve" viewBox="0 0 300 220" role="img" aria-label="Delivered functionality Q(t) curve; its area is the Grade"></svg>
+    </div>
+    <div class="stat">
+      <div><b id="s-reach">–</b><span>requests reached</span></div>
+      <div><b id="s-surv">–</b><span>requests survived <var>S</var>(<var>t</var>)</span></div>
+      <div><b id="s-q">–</b><span>delivered <var>Q</var>(<var>t</var>)</span></div>
+      <div class="hl"><b>0.571</b><span>Grade = area under <var>Q</var></span></div>
+    </div>
+    <p class="tol-say" id="tol-say" aria-live="polite"></p>
+  </div>
+  <figcaption><b>Figure 3. Grade averages over every user.</b> Left: each request's accuracy, with the tolerance line. The user leaves after the first request below the line (red), so later requests are never reached (grey). Right: delivered functionality <var>Q</var>(<var>t</var>) for this trajectory. Its area is the Grade (0.571), and the area under <var>S</var>(<var>t</var>) is the Survival (6.06). The two ends of the curve are mean accuracy (0.883) and the fail-stop score (0.093).</figcaption>
+</figure>
+
+<p>The closed form shows what the metric rewards. An early failure lowers the bar for every request after it, so it costs more than a late one. Trajectories (0.5, 1, …, 1) and (1, …, 1, 0.5) have the same mean accuracy, 0.95, but Grades of 0.50 and 0.95. This follows directly from the user model: a user who gives up early never sees what comes after.</p>
+
+<figure class="wide">
+  <img src="figures/sweep.png" alt="Tolerance sweeps Q(t) and S(t) for seven closed models, and cumulative output tokens by agent turn." loading="lazy">
+  <figcaption><b>Figure 4. Model gaps hold across the whole tolerance range.</b> (a, b) <var>Q</var>(<var>t</var>) and <var>S</var>(<var>t</var>) for the closed models, mean of three runs. The area under each curve is the Grade and Survival in Table 1. Fable 5 leads at every <var>t</var>, GPT 5.6 Sol, Opus 4.8 and Sonnet 4.6 stay close together, and Haiku 4.5 and GPT 5.6 Luna stay well below. (c) Cumulative output tokens per request by agent turn. Dots mark where each model reaches half its total.</figcaption>
+</figure>
+
+<h2 id="how">How EvoWeb is built</h2>
+
+<figure class="wide">
+  <img src="figures/method.png" alt="EvoWeb pipeline: (A) construction from WebGen-Bench seeds and real websites into a 10-request sequence with a dependency DAG, verified and curated; (B) evaluation of an evolving application with five browser tests per request and tolerance-averaged scoring." loading="lazy">
+  <figcaption><b>Figure 5. The EvoWeb pipeline.</b> (A) Construction: for each seed prompt, features of two similar real websites are used to plan a dependency DAG and write ten requests, which are verified automatically, repaired and curated by hand. (B) Evaluation: a coding agent handles the requests one at a time, a browser agent runs five tests after each, and scores are averaged over user-tolerance thresholds.</figcaption>
+</figure>
+
+<p>We designed the benchmark around three properties.</p>
+
+<p><b>Realistic.</b> We start from 40 randomly sampled app specifications in WebGen-Bench. For each one, a retrieval agent (Sonnet 4.6 with web search) finds two real websites with a similar purpose and extracts three or four notable features from each. A generator (Fable 5) adapts those features into follow-up requests, written in a product owner's voice. The requests describe behavior and pin any data the tests need, but they never prescribe files, components or class names. Grounding matters: in blind pairwise tests, three judges from three vendors preferred the grounded requests 69–74% of the time, and grounding cuts the 4-gram overlap between unrelated apps by 29%.</p>
+
+<p><b>Cumulative.</b> Before writing any request, the generator lays out a dependency DAG over the ten features. An edge <var>i</var> → <var>j</var> means request <var>j</var> cannot be implemented correctly without request <var>i</var>. Reading the same records doesn't count. Every app needs a dependency chain at least three deep and at least three dependencies between follow-ups. The mean longest chain is 4.75 requests. A separate LLM verifier checks each sequence against twelve rules, a failing sequence gets one repair pass, and people curate the survivors. Of 40 candidates, 32 remain, spanning 16 of WebGen-Bench's 20 domains.</p>
+
+<p><b>Agentic.</b> Each request runs as a multi-turn OpenHands session with at most 20 agent turns. The repository and the conversation history persist across all ten requests. The agent gets no test feedback between requests, so each request also measures how well it maintains what it has already built.</p>
+
+<h3>Five checks per request</h3>
+
+<p>Every follow-up carries exactly five browser tests. Three are <b>functional</b> tests of the new feature, and at least one targets the part a shallow implementation gets wrong. One is an <b>integration</b> test along a DAG edge: it acts on the earlier feature and checks the effect in the new one. One is a <b>backward</b> test copied from an earlier request. All 288 follow-up tests are satisfiable: every test gets a full pass in at least two runs of the five strongest models. For 284 of the 288 follow-ups, a single app passes all five of the request's tests at once.</p>
+
+<figure>
+  <video src="media/judge-demo.mp4" poster="media/judge-demo-poster.png" autoplay muted loop playsinline controls preload="metadata" width="768" height="566"></video>
+  <figcaption><b>Figure 6. The judge at work,</b> about 20× faster than real time: two checks on the last request of a hiring app built by Fable 5. The browser agent sees the page with numbered elements, thinks, acts and gives a verdict of YES, PARTIAL or NO.</figcaption>
+</figure>
+
+<p>The judge follows WebGen-Bench's protocol: a WebVoyager agent clicks and types through the live app in a fresh browser and returns YES, PARTIAL or NO. We use Sonnet 4.6, a strong computer-use model, to drive it. To validate it, research engineers labeled 300 randomly sampled executions blind to the benchmark verdict, 100 of each test type. The judge agrees exactly with the human label on <b>87.7%</b> of them (Cohen's κ = 0.72). That rises to 95.0% on the 261 that could be judged from screenshots, while disagreements concentrate in the 39 ambiguous cases that needed live inspection. The mean signed difference from human scores is +0.023 (95% CI −0.004 to +0.051).</p>
+
+<h2 id="findings">What we found</h2>
+
+<h3>Integration is the hard part</h3>
+
+<p>We recompute Grade separately for each test type, keeping each request's gate on its full accuracy so all three are scored over the same trajectories. The order is the same for every model: backward tests score highest, then functional, then integration. Agents generally keep what they built and can build something new. What they find hardest is making the new feature work with the old one.</p>
+
+<div class="table-wrap">
+<table id="by-type">
+  <thead><tr><th>Model</th><th>Backward</th><th>Functional</th><th>Integration</th></tr></thead>
+  <tbody></tbody>
+</table>
+</div>
+<figcaption style="margin-left:0">Table 2. Grade by test type. Integration (red) is the lowest for every model. Integration tests that check a global rule instead of a dependency edge (6% of requests) are excluded.</figcaption>
+
+<h3>Deeper dependencies, lower accuracy</h3>
+
+<p>If composition is the bottleneck, requests that rely on more earlier work should be harder. To separate dependency from position in the trajectory, we look only at the last three requests (8–10), which also cover the widest range of both measures. Accuracy falls with a request's depth in the DAG and with its in-degree, for every model. The fitted lines slope downward everywhere, and they slope most steeply for weaker models.</p>
+
+<figure class="wide">
+  <img src="figures/depth.png" alt="Accuracy of requests 8 to 10 versus node depth and in-degree in the DAG, with linear fits for Fable 5, Opus 4.8, Sonnet 4.6 and Haiku 4.5." loading="lazy">
+  <figcaption><b>Figure 7. Accuracy by position in the dependency DAG.</b> Accuracy <var>a<sub>r</sub></var> of requests 8–10 against (a) the request's depth, the longest dependency chain leading to it, and (b) its in-degree, the number of earlier requests it directly relies on. Marker area is proportional to the number of requests. Lines are least-squares fits.</figcaption>
+</figure>
+
+<h3>Apps keep building but stop running</h3>
+
+<p>After every request we also record whether the production build fails and whether the served app throws during browser testing. Build errors are rare for most models. Runtime errors vary much more and track Grade more closely (Spearman ρ = −0.72, against −0.52 for build errors). Qwen3.5 35B-A3B, for example, fails to build after 2.5% of requests but throws at runtime after 36.6%. Runtime errors also grow with every request. Models preserve a buildable codebase more often than a working one.</p>
+
+<figure style="max-width:440px;margin-left:auto;margin-right:auto">
+  <img src="figures/runtime.png" alt="Bar chart: runtime error rate by request index, rising from about 2% at request 1 to about 12% at requests 8 to 10." loading="lazy">
+  <figcaption><b>Figure 8. Runtime errors accumulate.</b> Share of requests after which the served app raises a runtime error, by request index, pooled over models.</figcaption>
+</figure>
+
+<p>Failed tool calls, such as a string replacement that matches nothing, do not correlate with Grade (ρ = −0.06). The agent sees the failure and retries, so these errors cost steps rather than quality.</p>
+
+<h3>Where the failures come from</h3>
+
+<p>We classified every failed test (score 0) of four Anthropic models into app-side failure modes. Haiku 4.5's failures are led by missing data or UI (31.2%, against 21–24% for the others). Often each page keeps its own copy of the data, so records added in one request never reach pages added later. Fable 5 rarely breaks the app: 2.2% of its failures are runtime or build errors, against 13.7–17.3% for the others. Its failures shift toward wrong values and styling. It makes the app work and still misses small details.</p>
+
+<h3>More effort is not better</h3>
+
+<p>Fable 5 scores highest while using the fewest turns per request (4.7). Two of the three strongest models, Fable 5 and GPT 5.6 Sol, each produce about 100K output tokens per trajectory. Sonnet 4.6 produces more than twice as many as Fable 5 and scores lower (Figure 4c). For every model, half the output tokens come in the first three turns. Higher scores come from spending tokens and turns well, although Fable 5 is also the most expensive per app.</p>
+
+<h3>The request language matters</h3>
+
+<p>Users often describe what they want in their own language, even when the app is in English. We translated the requests into French, German, Chinese, Hindi and Hebrew and left the app and the tests in English. Only Sonnet 4.6 is insensitive, staying within 0.03 of its English Grade in every language. Other models swing in both directions, sometimes in high-resource languages: GLM 5.2 drops to 0.445 in German but reaches 0.602 in Hebrew, and GPT 5.6 Luna falls from 0.277 in English to 0.198 in French. Agents should be evaluated in the language their users write in.</p>
+
+<div class="table-wrap">
+<table id="lang">
+  <thead><tr><th>Request language</th><th>Sonnet 4.6</th><th>Haiku 4.5</th><th>GPT 5.6 Terra</th><th>GLM 5.2</th><th>GPT 5.6 Luna</th></tr></thead>
+  <tbody></tbody>
+</table>
+</div>
+<figcaption style="margin-left:0">Table 3. Grade by request language. Bold: best per model.</figcaption>
+
+<h3>The ranking is not the judge's</h3>
+
+<p>LLM judges are known to favor their own outputs, and our default judge, Sonnet 4.6, is also one of the agents we evaluate. So we re-scored every run with three judges from other vendors: GPT 5.6 Terra, GLM 5.3 Flash and Qwen3.5 397B. Absolute scores shift with the judge, but each alternative flips only 2–3 of the 28 model pairs. All the flips are among GPT 5.6 Sol, Opus 4.8 and Sonnet 4.6, which are within 0.015 Grade of each other. No judge favors its own family. Sonnet 4.6 ranks lower under its own judge than under two of the others.</p>
+
+<h2 id="try">Try it</h2>
+
+<p>The harness runs any model: Anthropic, OpenAI, OpenRouter, any OpenAI-compatible API, or weights served locally with vLLM. Build the harness image and install the scorer:</p>
+
+<div class="card"><div class="card-head"><span>INSTALL</span><button data-copy="c1">COPY</button></div>
+<pre id="c1"><code>git clone https://github.com/two-delta/EvoWeb.git &amp;&amp; cd EvoWeb
+docker build -f harness/Dockerfile -t evoweb-harness:latest .
+pip install -r requirements.txt &amp;&amp; pip install -e .</code></pre></div>
+
+<p>Then run a model on all 32 apps. The judge defaults to Sonnet 4.6, and the dataset is downloaded from Hugging Face on first use:</p>
+
+<div class="card"><div class="card-head"><span>RUN</span><button data-copy="c2">COPY</button></div>
+<pre id="c2"><code>export ANTHROPIC_API_KEY=&lt;key&gt;      # for the judge
+evoweb run --name haiku --model anthropic/claude-haiku-4-5
+
+python3 -m evoweb.score_run runs/haiku    # Grade and Survival, scored exactly like the paper</code></pre></div>
+
+<p>The repository also releases the paper's runs of the four Anthropic models, three runs each with every judge verdict, and one complete Fable 5 run with all conversations, code and judge sessions. The example app above is in <code>examples_artifacts/examples.zip</code>.</p>
+
+<h2 id="limitations">Limitations</h2>
+<ul>
+  <li>Thirty-two apps of ten requests each is enough to separate model tiers, not to rank models within about 0.01 Grade. The closed models were run three times, the open-weight models once, and the language and DAG analyses have no confidence intervals.</li>
+  <li>The judge is an LLM. Its agreement with people is 87.7% overall but much lower on ambiguous cases, and an error on an early request weighs more under Grade than one on a late request.</li>
+  <li>Uniform weighting over thresholds and PARTIAL = ½ are conventions. Any other weighting falls between the fail-stop score and mean accuracy, and the paper reports both.</li>
+  <li>One backward test per request samples earlier functionality rather than auditing every regression. A failed backward test can also mean the feature never worked.</li>
+  <li>The user never reports a failure or asks for a fix. A closed loop where agents must recover from their own mistakes is the natural next step.</li>
+</ul>
+
+<h2 id="takeaway">The takeaway</h2>
+
+<p>Coding agents are good at building an app from a single request. EvoWeb asks whether they can keep extending that app, and the answer is not yet: even the strongest models leave about 30% of the delivered functionality on the table. The weak point is not new features in isolation. It is the joins between features built at different times, and it gets worse the more an app has already grown. Scoring over every level of user patience shows these gaps without assuming one stopping rule.</p>
+
+<h2 id="ack">Acknowledgements</h2>
+<p>EvoWeb builds on WebGen-Bench, whose app specifications seed every trajectory and whose evaluation protocol we extend, and on WebVoyager for the browser judge. Agents run in OpenHands. We thank their authors and maintainers. We also thank Roei Dalal for designing and building the parallel evaluation infrastructure that made the experiments fast to run.</p>
+
+<h2 id="citation">Citation</h2>
+<p>You can cite this post or the paper with the following:</p>
+<div class="card"><div class="card-head"><span>BIBTEX</span><button data-copy="bib">COPY</button></div>
+<pre id="bib"><code>@article{nukrai2026evoweb,
+  title   = {EvoWeb: A Benchmark for Coding Agents on Evolving Web Applications},
+  author  = {Nukrai, David and Alon, Bar and Levy, Nativ and Atad, Ido Andrew and Cohen, Ido
+             and Zimerman, Itamar and Wolf, Lior and David, Eli and Naiman, Ilan},
+  journal = {arXiv preprint arXiv:2610.16402},
+  year    = {2026},
+  url     = {https://arxiv.org/abs/2610.16402}
+}</code></pre></div>
+
+</main>
+
+<footer>EvoWeb · <a href="https://arxiv.org/abs/2610.16402">paper</a> · <a href="https://github.com/two-delta/EvoWeb">code</a> · <a href="https://huggingface.co/datasets/TD-Labs/EvoWeb">dataset</a></footer>
+
+<script>
+(() => {
+  /* ---------- Table 1: leaderboard (Table 2 of the paper) ---------- */
+  const LB = [
+    ["Fable 5", .694, 7.32, 4.7, 14.40, 0.5, 0], ["Kimi K3", .684, 7.31, 7.6, 4.17, 3.6, 1],
+    ["GPT 5.6 Sol", .622, 6.72, 9.0, 3.18, 1.3, 0], ["Opus 4.8", .608, 6.50, 10.0, 8.85, 3.0, 0],
+    ["Sonnet 4.6", .607, 6.55, 10.1, 9.93, 3.5, 0], ["GLM 5.2", .552, 5.93, 12.1, 4.02, 5.4, 1],
+    ["DeepSeek V4-Pro", .529, 5.84, 9.7, 1.66, 3.9, 1], ["DeepSeek V4-Flash", .512, 5.80, 9.2, 0.12, 6.1, 1],
+    ["Qwen3.8 2.4T-A95B", .503, 5.42, 13.1, 5.93, 15.4, 1], ["GPT 5.6 Terra", .488, 5.34, 6.5, 2.11, 1.2, 0],
+    ["Haiku 4.5", .377, 4.43, 13.1, 2.31, 7.4, 0], ["Qwen3.5 397B-A17B", .315, 3.63, 6.5, 2.08, 13.4, 1],
+    ["GPT 5.6 Luna", .277, 3.12, 8.1, 0.36, 5.4, 0], ["Qwen3.5 35B-A3B", .162, 2.09, 9.4, 1.54, 36.6, 1]
+  ];
+  document.querySelector('#leaderboard tbody').innerHTML = LB.map((r, i) =>
+    `<tr class="${i < 2 ? 'top' : ''}"><td>${r[0]}${r[6] ? '<span class="tag">OPEN</span>' : ''}</td>` +
+    `<td class="bar-cell"><div class="bar"><span>${r[1].toFixed(3)}</span><b><i style="width:${(r[1] / .7 * 100).toFixed(1)}%"></i></b></div></td>` +
+    `<td>${r[2].toFixed(2)}</td><td>${r[3].toFixed(1)}</td><td>$${r[4].toFixed(2)}</td><td>${r[5].toFixed(1)}%</td></tr>`).join('');
+
+  /* ---------- Table 2: by test type ---------- */
+  const BT = [["Fable 5", .706, .678, .630], ["Kimi K3", .692, .663, .632], ["Opus 4.8", .629, .598, .564],
+    ["GPT 5.6 Sol", .624, .596, .553], ["Sonnet 4.6", .597, .564, .524], ["GLM 5.2", .559, .533, .473],
+    ["GPT 5.6 Terra", .457, .431, .416], ["Haiku 4.5", .373, .335, .286], ["Average", .580, .550, .510]];
+  document.querySelector('#by-type tbody').innerHTML = BT.map((r, i) =>
+    `<tr class="${i === BT.length - 1 ? 'top' : ''}"><td>${r[0]}</td><td>${r[1].toFixed(3)}</td><td>${r[2].toFixed(3)}</td><td class="lowest">${r[3].toFixed(3)}</td></tr>`).join('');
+
+  /* ---------- Table 3: request language ---------- */
+  const LG = [["English", .607, .377, .488, .552, .277], ["French", .594, .388, .529, .567, .198], ["German", .618, .330, .427, .445, .262],
+    ["Chinese", .583, .343, .509, .597, .268], ["Hindi", .604, .297, .508, .524, .221], ["Hebrew", .601, .296, .431, .602, .220]];
+  const best = [1, 2, 3, 4, 5].map(c => Math.max(...LG.map(r => r[c])));
+  document.querySelector('#lang tbody').innerHTML = LG.map(r =>
+    `<tr><td>${r[0]}</td>${[1, 2, 3, 4, 5].map(c => `<td${r[c] === best[c - 1] ? ' style="font-weight:500;color:var(--blue)"' : ''}>${r[c].toFixed(3)}</td>`).join('')}</tr>`).join('');
+
+  /* ---------- Figure 2: walkthrough ---------- */
+  const W = [{"n": 1, "title": "Stock report generator", "arch": "base", "deps": [], "text": "Please implement a website for generating stock reports to provide stock information and analysis. The website should have the functionality to search and summarize stock information, and generate customized stock reports based on user requirements. Users should be able to input stock codes or names, select report formats and content, and the website will automatically generate the corresponding reports. The reports should include basic stock information, market trends, financial data, and more. Set the background color to white and the component color to navy.", "src": "WebGen-Bench", "acc": 0.9286, "checks": [{"t": "base", "task": "Verify the stock search functionality by entering a valid stock code.", "exp": "The system returns relevant stock information and analysis corresponding to the entered stock code, displaying details such as basic stock information, market trends, and financial data.", "v": "yes"}, {"t": "base", "task": "Test the report customization feature by selecting different report formats and content options.", "exp": "The system provides options for various report formats and content customization, enabling users to choose according to their preferences.", "v": "yes"}, {"t": "base", "task": "Input a stock name instead of a stock code to search for stock information.", "exp": "The website successfully recognizes the stock name, retrieving and displaying the relevant stock information and analysis.", "v": "yes"}, {"t": "base", "task": "Generate a customized stock report by choosing specific elements to include (e.g., market trends, financial data).", "exp": "The generated report correctly includes the selected elements, accurately reflecting the user's specified choices.", "v": "yes"}, {"t": "base", "task": "Navigate through the website and test all buttons function correctly by clicking each of them and back to the homepage.", "exp": "Each click on a button leads to the appropriate page or action without any errors, ensuring smooth navigation.", "v": "yes"}, {"t": "base", "task": "Evaluate the website's form inputs by submitting incomplete or incorrect stock information.", "exp": "The system displays appropriate error messages and guidance on how to correct the input errors, ensuring robust input validation.", "v": "partial", "note": "Clear error messages for an empty or unknown ticker, but the judge found no validation for the report options, so PARTIAL.", "shot": "r1-c6"}, {"t": "base", "task": "Verify that the website uses 'white' as the background color and 'navy' as the component color, as specified in the design requirements.", "exp": "The website has a background color of 'white' and components (such as buttons, cards, headers, etc.) are styled with the color 'navy', accurately reflecting the design instruction.", "v": "yes"}], "shot": "r1"}, {"n": 2, "title": "Multi-criteria stock screener", "arch": "derived", "deps": [1], "text": "Before we go further, pin down a demo universe so we're always looking at the same numbers — exactly these eight stocks, I'll add more later: Argent Micro (ARGN, Technology, $84.50, P/E 31.4, market cap $142B, yield 0.0%), Baltic Freight (BLTC, Industrials, $23.75, P/E 9.8, $8B, 4.2%), Comet Energy (CMET, Energy, $61.20, P/E 12.6, $54B, 5.1%), Driftwood Retail (DRFT, Consumer Goods, $9.15, P/E 22.0, $2B, 1.8%), Ember Semiconductor (EMBR, Technology, $147.30, P/E 41.7, $210B, 0.4%), Fjord Pharma (FJRD, Healthcare, $33.60, P/E 12.6, $18B, 2.5%), Greenline Utilities (GRNL, Utilities, $54.80, P/E 15.5, $27B, 3.9%), and Helix Software (HLXS, Technology, $58.90, P/E 27.3, $65B, 1.1%). Then give me a proper screener page: sector checkboxes where a stock passes if it's in any checked sector, typed boxes for maximum P/E and minimum dividend yield that all have to hold together, a live 'X of 8 match' readout that follows every change, and sortable columns where a P/E sort breaks ties alphabetically by ticker. Clicking a result row should drop me straight into generating that stock's report. I also want two built-in presets — 'Dividend Payers' for yield of at least 2.5% and 'Cheap Tech' for Technology under P/E 35 — plus the ability to save my own named presets and re-run them later. House rule from here on out: every percentage anywhere in this app, yields today or any gains and weights we ever add, shows one decimal with the % sign, like 4.2%, never 4.20% or 4%.", "src": "Koyfin's equity screener, with Simply Wall St's investing themes as presets", "acc": 1.0, "checks": [{"t": "functional", "task": "On the screener, check the Technology and Healthcare sector boxes and type 1.0 into the minimum dividend yield box.", "exp": "Only Fjord Pharma and Helix Software remain in the results — Argent Micro and Ember Semiconductor are excluded for low yield — and the match readout says 2 of 8.", "v": "yes"}, {"t": "exact", "task": "On the screener, clear any active filters, then sort the results by the P/E column in ascending order.", "exp": "The first three rows are Baltic Freight (9.8), Comet Energy (12.6), then Fjord Pharma (12.6) — the 12.6 tie is broken alphabetically by ticker, so CMET comes before FJRD.", "v": "yes"}, {"t": "functional", "task": "Click the built-in 'Dividend Payers' preset on the screener.", "exp": "Results show exactly Baltic Freight, Comet Energy, Fjord Pharma, and Greenline Utilities — the boundary stock Fjord Pharma at exactly 2.5% is included.", "v": "yes"}, {"t": "integration", "task": "Click the Comet Energy row in the screener results.", "exp": "You land in report generation with Comet Energy pre-selected, and generating produces the report for Comet Energy.", "v": "yes"}, {"t": "backward", "task": "Type CMET into the stock search and generate a report with all content options selected.", "exp": "A report for the searched stock appears, including basic stock information, market trends, and financial data sections.", "v": "yes", "from": 1}], "shot": "r2"}, {"n": 3, "title": "Grouped watchlist", "arch": "workflow", "deps": [1, 2], "text": "That screener is already paying off — now I need somewhere to keep candidates. Add a Watchlist page with two groups, Core and Speculative; start it with Comet Energy and Fjord Pharma in Core and Helix Software in Speculative, and put a note on Fjord Pharma that says 'watch Q3 margins'. I want an add-to-watchlist button with a group picker on every screener result row and on any generated report, and if a stock is already on the list don't create a second row — just tell me it's already saved. On the watchlist itself let me edit notes, move a stock between groups, and remove entries. One more house style going forward: any time a stock appears anywhere in this app, show its ticker in a small navy badge in front of the name, like [FJRD] Fjord Pharma — everywhere, including whatever we build later.", "src": "Simply Wall St's watchlist, extended with groups and notes", "acc": 0.7, "checks": [{"t": "functional", "task": "Open the Watchlist page on a fresh load.", "exp": "The Core group shows Comet Energy and Fjord Pharma, Speculative shows Helix Software, and Fjord Pharma displays the note 'watch Q3 margins'.", "v": "yes"}, {"t": "exact", "task": "From the screener results, click the add-to-watchlist control on the Comet Energy row and choose the Core group, then open the Watchlist page.", "exp": "No duplicate is created — the watchlist still has exactly three entries with a single Comet Energy row, and the app indicates it was already saved.", "v": "partial", "note": "No duplicate row was created, but the judge saw no “already saved” message.", "shot": "r3"}, {"t": "functional", "task": "On the Watchlist, move Helix Software from Speculative to Core.", "exp": "Helix Software now appears under Core alongside the other two stocks and no longer appears under Speculative.", "v": "yes"}, {"t": "integration", "task": "In the screener, click add-to-watchlist on the Greenline Utilities row, choose Speculative, then open the Watchlist page.", "exp": "Greenline Utilities appears under the Speculative group on the watchlist.", "v": "no", "note": "The screener table overflows: the group picker and “+ Watch” buttons are clipped at its right edge, and the judge cannot add Greenline Utilities.", "shot": "r3-c4"}, {"t": "backward", "task": "On the screener, clear any active filters, then sort the results by the P/E column in ascending order.", "exp": "The first three rows are Baltic Freight (9.8), Comet Energy (12.6), then Fjord Pharma (12.6) — the 12.6 tie is broken alphabetically by ticker, so CMET comes before FJRD.", "v": "yes", "from": 2}], "shot": "r3"}, {"n": 4, "title": "Portfolio positions calculator", "arch": "tool", "deps": [3], "text": "Let's make the watchlist talk money: add a Positions view where every watchlisted stock gets a shares box and a buy-price box, and everything recalculates as I type — market value at the stock's price, gain or loss in dollars and percent, each position's weight of the whole portfolio, and a totals row. Load my real positions to start: 50 CMET bought at $48.00, 100 FJRD at $36.50, and 45 HLXS at $52.25. Weights are one decimal but they must always total exactly 100.0% — when plain rounding leaves you at 99.9 or 100.1, adjust the weight that was closest to rounding the other way. A blank or zero shares box just drops that row out of the totals with no NaN or error anywhere, and negative numbers get rejected. Also a default for the whole app from here on: any list of stocks where I haven't picked a sort shows alphabetically by ticker.", "src": "Simply Wall St's watchlist, extended into position tracking", "acc": 0.5, "checks": [{"t": "exact", "task": "Open the Positions view on a fresh load and read the weight column.", "exp": "Fjord Pharma's weight reads 37.1% (not 37.0%), so the three weights 33.7%, 37.1%, and 29.2% total exactly 100.0%, and total market value shows $9,070.50.", "v": "yes"}, {"t": "functional", "task": "In the Positions view, change Comet Energy's shares from 50 to 60.", "exp": "After entering 60, CMET's market value updates to $3,672.00 without any save button, the totals row recalculates immediately, and the three weights still add up to exactly 100.0%.", "v": "yes"}, {"t": "functional", "task": "Clear Helix Software's shares box so it is empty.", "exp": "The HLXS row drops out of the totals — total market value becomes $6,420.00 for the two remaining positions, no NaN or error appears, and the two remaining weights still total exactly 100.0%.", "v": "no", "note": "Clearing the box leaves Helix Software in the totals: still $9,070.50 instead of $6,420.00.", "shot": "r4-c3"}, {"t": "integration", "task": "Add Baltic Freight to the watchlist from the screener, then open the Positions view and type 10 into Baltic Freight's shares box and 20.00 into its buy price box.", "exp": "Baltic Freight appears as a position row and shows market value $237.50 with a gain of +18.8%.", "v": "no", "note": "The same clipped screener control from request 3: Baltic Freight never reaches the watchlist, so it never becomes a position.", "shot": "r4-c4"}, {"t": "backward", "task": "From the screener results, click the add-to-watchlist control on the Comet Energy row and choose the Core group, then open the Watchlist page.", "exp": "No duplicate is created — the watchlist still has exactly three entries with a single Comet Energy row, and the app indicates it was already saved.", "v": "partial", "from": 3, "note": "Re-run of request 3’s duplicate check: still no “already saved” message.", "shot": "r4-c4"}], "shot": "r4"}, {"n": 5, "title": "Health score ratings", "arch": "derived", "deps": [1], "text": "Time for the health snapshot I keep sketching on paper. Build a Ratings page that scores all eight stocks 0-5 on five dimensions and stacks them up. Value comes straight off P/E — under 10 is a 5, from 10 up to but not including 15 is a 4, 15 up to 25 is a 3, 25 up to 35 is a 2, and 35 or more is a 1; Dividend comes off yield — exactly zero is 0, under 1% is 1, from 1 up to 2% is 2, 2 up to 3% is 3, 3 up to 4.5% is 4, and 4.5% or better is 5. For Growth, Profitability, and Financial Health use my analyst numbers, in that order: Argent 5/3/4, Baltic 2/4/5, Comet 1/4/3, Driftwood 3/2/2, Ember 5/5/4, Fjord 4/3/4, Greenline 1/3/5, Helix 4/5/3. Show each stock's five scores as a pentagon or radar snapshot with the total out of 25 and a letter grade — 20 or more is A, 16 to 19 is B, 12 to 15 is C, 8 to 11 is D, under 8 is E — and rank the page best total first, breaking ties alphabetically by ticker. While you're at it, add a Health Score option to report generation so a generated report can include that stock's pentagon and grade.", "src": "Simply Wall St's Snowflake health score", "acc": 1.0, "checks": [{"t": "exact", "task": "Open the Ratings page and read the ranking from the top.", "exp": "Baltic Freight ranks first with a total of 20 and grade A (20 lands on the A boundary, not B), and the three stocks tied at 16 appear in the order Ember Semiconductor, Greenline Utilities, Helix Software.", "v": "yes"}, {"t": "functional", "task": "On the Ratings page, find Greenline Utilities and read its Value and Dividend scores.", "exp": "Greenline's Value score is 3 (P/E 15.5 falls in the 15-to-25 bucket, not the bucket below) and its Dividend score is 4 (yield 3.9%).", "v": "yes"}, {"t": "functional", "task": "Check Comet Energy's entry on the Ratings page.", "exp": "Comet Energy shows Dividend 5 (yield 5.1% clears the 4.5% bucket), Value 4, a total of 17 with grade B, and all five dimensions visible on its pentagon or radar snapshot.", "v": "yes"}, {"t": "integration", "task": "Generate a report for Baltic Freight with the Health Score section included.", "exp": "The generated report contains a Health Score section showing Baltic Freight's grade A and total of 20 alongside the other selected report content.", "v": "yes"}, {"t": "backward", "task": "On the screener, check the Technology and Healthcare sector boxes and type 1.0 into the minimum dividend yield box.", "exp": "Only Fjord Pharma and Helix Software remain in the results — Argent Micro and Ember Semiconductor are excluded for low yield — and the match readout says 2 of 8.", "v": "yes", "from": 2}], "shot": "r5"}, {"n": 6, "title": "Alerts center", "arch": "workflow", "deps": [3], "text": "Now alerts, so the watchlist watches itself. Any stock on my watchlist can carry alert rules — pick the stock, a metric (price, P/E, or dividend yield), above or below, and a typed threshold — creatable straight from a watchlist row or inside a new Alerts Center, where the stock picker only offers what's on the watchlist. A rule evaluates against the stock's current numbers the moment it's created and again whenever I edit it, and above/below are strict: a value exactly equal to the threshold has NOT triggered. Start me with three rules: CMET price below $65 (that one's live, price is 61.20), FJRD yield above 3%, and HLXS P/E below 25. The Alerts Center shows every rule with a status rollup of how many are triggered versus watching, and a triggered rule can be dismissed into a separate history section with the rollup staying honest the whole time.", "src": "Simply Wall St's smart alerts", "acc": 1.0, "checks": [{"t": "exact", "task": "Open the Alerts Center on a fresh load.", "exp": "The CMET price-below-$65 rule shows triggered, the FJRD and HLXS rules show watching, and the rollup reads 1 triggered and 2 watching.", "v": "yes"}, {"t": "functional", "task": "In the Alerts Center, dismiss the triggered Comet Energy rule.", "exp": "The rule moves out of the active list into the history section, and the triggered count in the rollup decreases by one while the history section now shows it.", "v": "yes"}, {"t": "functional", "task": "In the Alerts Center, edit the Fjord Pharma yield rule's threshold from 3 to 2.5.", "exp": "The rule still shows watching — Fjord's yield is exactly 2.5%, and 'above' is strict, so an exactly-equal value does not trigger.", "v": "yes"}, {"t": "integration", "task": "On the Watchlist page, use the set-alert control on the Helix Software row to create a rule for price above 50.", "exp": "The new rule appears in the Alerts Center attached to Helix Software and immediately shows triggered, since 58.90 is strictly above 50.", "v": "yes"}, {"t": "backward", "task": "Open the Positions view on a fresh load and read the weight column.", "exp": "Fjord Pharma's weight reads 37.1% (not 37.0%), so the three weights 33.7%, 37.1%, and 29.2% total exactly 100.0%, and total market value shows $9,070.50.", "v": "yes", "from": 4}], "shot": "r6"}, {"n": 7, "title": "Earnings transcript search", "arch": "derived", "deps": [1], "text": "Add an Earnings Call Highlights hub. Give every one of the eight stocks two short canned quotes from their latest earnings calls, but place the words deliberately: 'automation' appears in exactly four quotes — both of Ember Semiconductor's, one of Argent Micro's, one of Helix Software's — 'tariffs' appears only in Baltic Freight's quotes, and no quote anywhere mentions 'crypto'. Then give me a search box that matches live as I type without caring about capitalization, grouping hits by stock with the matched word highlighted, a match count per stock and a grand total, ordered most matches first with ties going alphabetical by ticker. An empty box should just invite me to search, and a term with zero hits gets a clear no-results note, never a blank screen. While you're in there, let report generation include an Earnings Highlights section carrying that stock's quotes.", "src": "Koyfin's transcript keyword search", "acc": 0.8, "checks": [{"t": "exact", "task": "Type automation into the earnings highlights search box.", "exp": "Three stocks appear in the order Ember Semiconductor (2 matches), Argent Micro (1 match), Helix Software (1 match) — most matches first, the 1-1 tie alphabetical by ticker — with a grand total of 4 and every occurrence of 'automation' highlighted.", "v": "yes"}, {"t": "functional", "task": "Type crypto into the earnings highlights search box.", "exp": "A clear no-results message appears — no crash and no blank results area — and any total shown reads zero.", "v": "yes"}, {"t": "functional", "task": "Type TARIFFS in capital letters into the earnings highlights search box.", "exp": "Baltic Freight's matching quote appears despite the different capitalization, and Baltic Freight is the only stock listed.", "v": "yes"}, {"t": "rule", "task": "Type automation into the search box and look at how each result stock is labeled.", "exp": "Each result group shows the ticker in a small navy badge in front of the company name — [EMBR] Ember Semiconductor, [ARGN] Argent Micro, [HLXS] Helix Software.", "v": "no", "note": "The judge typed into the home page’s stock search rather than the new hub’s and found no matches.", "shot": "r7-c4"}, {"t": "backward", "task": "Open the Ratings page and read the ranking from the top.", "exp": "Baltic Freight ranks first with a total of 20 and grade A (20 lands on the A boundary, not B), and the three stocks tied at 16 appear in the order Ember Semiconductor, Greenline Utilities, Helix Software.", "v": "yes", "from": 5}], "shot": "r7"}, {"n": 8, "title": "Side-by-side compare tool", "arch": "tool", "deps": [5], "text": "I keep flipping between reports to weigh stocks against each other — build me a Compare tool instead. Let me pick two to four stocks and get side-by-side columns with rows for price, market cap, P/E, dividend yield, and the overall health total from the ratings work, recomputing instantly every time I add or drop a stock. Best in row gets highlighted — lowest P/E wins, highest yield wins, highest health total wins — and a genuine tie highlights every stock that shares it. Top it with a win tally per stock counting how many rows it won, with ties counting for everyone in them; if only one stock or none is selected, show a friendly prompt to pick more rather than an empty or broken grid.", "src": "Simply Wall St's health score and Koyfin's metrics, fused into a comparison grid", "acc": 1.0, "checks": [{"t": "exact", "task": "In the Compare tool, select Comet Energy and Fjord Pharma.", "exp": "The P/E row highlights both columns (each is 12.6), dividend yield highlights Comet Energy (5.1% vs 2.5%), health score highlights Fjord Pharma (18 vs 17), and the win tally reads 2 for Comet Energy and 2 for Fjord Pharma.", "v": "yes"}, {"t": "functional", "task": "With Comet Energy and Fjord Pharma selected, add Baltic Freight as a third stock.", "exp": "Highlights recompute instantly: Baltic Freight now solely wins P/E (9.8, so the 12.6 pair loses its highlight) and health (20), Comet Energy keeps yield, and the tally reads Baltic 2, Comet 1, Fjord 0.", "v": "yes"}, {"t": "functional", "task": "Remove selected stocks until only one remains.", "exp": "Instead of a one-column grid or an error, a friendly prompt appears asking to pick at least two stocks to compare.", "v": "yes"}, {"t": "integration", "task": "Select Comet Energy and Fjord Pharma and look at the dividend yield row.", "exp": "Yields display with exactly one decimal and a % sign — 5.1% and 2.5% — never 5.10% or 5%.", "v": "yes"}, {"t": "backward", "task": "In the Alerts Center, edit the Fjord Pharma yield rule's threshold from 3 to 2.5.", "exp": "The rule still shows watching — Fjord's yield is exactly 2.5%, and 'above' is strict, so an exactly-equal value does not trigger.", "v": "yes", "from": 6}], "shot": "r8"}, {"n": 9, "title": "Theming restyle", "arch": "restyle", "deps": [1, 2, 3, 5, 6], "text": "Facelift time, Koyfin style. Put a light/dark toggle in the header of every page: dark mode swaps to deep navy (#0B1B33) backgrounds with light text, and the choice has to stick as I move between pages. In both themes the primary action buttons — generate report, run or apply a screen, add to watchlist, save an alert — go amber (#F0A92D) with dark navy text; page titles and section headings go uppercase with wide letter-spacing; and every card or panel gets 12px rounded corners with a thin visible border. Keep the ticker badges readable in dark mode too — give them a lighter fill or an outline so they don't vanish into the background. This applies across the whole app — the report page, the screener, the watchlist, the ratings page, the alerts center, all of it, no half-done pages.", "src": "Koyfin's light/dark workspace themes", "acc": 0.9, "checks": [{"t": "functional", "task": "Click the theme toggle on the screener page, then navigate to the Watchlist page and then the Alerts Center.", "exp": "All three pages render with the deep navy background and light text — the dark theme persists across navigation with no page left on the light background.", "v": "yes"}, {"t": "functional", "task": "In light mode, look at the primary generate button on the report page and the apply/run control on the screener.", "exp": "Both are amber with dark navy text and match each other, and nearby page titles or section headings render uppercase with wide letter-spacing.", "v": "yes"}, {"t": "exact", "task": "Switch to dark mode and open the Ratings page.", "exp": "The page is dark-themed and still ranks Baltic Freight first with grade A and a total of 20 — the restyle did not break the ratings order.", "v": "yes"}, {"t": "integration", "task": "In dark mode, open the Watchlist page and check the Fjord Pharma entry.", "exp": "The watchlist cards show 12px rounded corners with a visible border on the dark background, the FJRD ticker badge is still legible, and the note 'watch Q3 margins' still displays.", "v": "partial", "note": "Rounded cards and a legible badge in dark mode, but the “watch Q3 margins” note is white on white.", "shot": "r9-c4"}, {"t": "backward", "task": "Type automation into the earnings highlights search box.", "exp": "Three stocks appear in the order Ember Semiconductor (2 matches), Argent Micro (1 match), Helix Software (1 match) — most matches first, the 1-1 tie alphabetical by ticker — with a grand total of 4 and every occurrence of 'automation' highlighted.", "v": "yes", "from": 7}], "shot": "r9"}, {"n": 10, "title": "Command center dashboard", "arch": "derived", "deps": [3, 4, 5, 6], "text": "Bring it all home with a Command Center as the landing view — one glance, four tiles. A Portfolio tile with total market value and overall gain from my positions, an Alerts tile showing how many rules are currently triggered out of the total, a Top Rated tile naming the stock with the best overall health score and its grade, and a Watchlist tile with the count per group. Every tile is a shortcut to its page, and the numbers can never go stale — if I dismiss an alert or change a share count and come back, the tiles have to reflect it. And on a clean first load it should already be populated from everything we've seeded, not zeros or placeholders.", "src": "Koyfin's dashboard workspace, reshaped into a live rollup", "acc": 1.0, "checks": [{"t": "exact", "task": "Open the Command Center on a fresh load.", "exp": "The Portfolio tile reads $9,070.50 with overall gain +8.0%, the Alerts tile reads 1 triggered of 3, Top Rated names Baltic Freight with grade A, and the Watchlist tile shows Core 2 and Speculative 1.", "v": "yes"}, {"t": "functional", "task": "Click the Portfolio tile on the Command Center.", "exp": "You land on the Positions view with the three seeded positions visible.", "v": "yes"}, {"t": "functional", "task": "Open the Positions view, change Comet Energy's shares from 50 to 60, then return to the Command Center.", "exp": "The Portfolio tile's total now reads $9,682.50 — the tile recomputed instead of showing the stale $9,070.50.", "v": "yes"}, {"t": "integration", "task": "In the Alerts Center, dismiss the triggered Comet Energy rule, then return to the Command Center.", "exp": "The Alerts tile now shows 0 triggered, consistent with the Alerts Center rollup after the dismissal.", "v": "yes"}, {"t": "backward", "task": "In the Compare tool, select Comet Energy and Fjord Pharma.", "exp": "The P/E row highlights both columns (each is 12.6), dividend yield highlights Comet Energy (5.1% vs 2.5%), health score highlights Fjord Pharma (18 vs 17), and the win tally reads 2 for Comet Energy and 2 for Fjord Pharma.", "v": "yes", "from": 8}], "shot": "r10"}];
+  const AC = { base: 'var(--a-base)', derived: 'var(--a-derived)', tool: 'var(--a-tool)', workflow: 'var(--a-workflow)', restyle: 'var(--a-restyle)' };
+  const AN = { base: 'Base app', derived: 'Derived state', tool: 'Interactive tool', workflow: 'Multi-page workflow', restyle: 'Design restyle' };
+  const TN = { base: 'WebGen-Bench check', functional: 'Functional', exact: 'Functional · exact value', integration: 'Integration', rule: 'Integration · global rule', backward: 'Backward' };
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const pct = a => (a * 100).toFixed(a === 1 ? 0 : 1) + '%';
+  const stepsEl = document.getElementById('steps'), panel = document.getElementById('panel');
+  const img = document.getElementById('shot-img'), cap = document.getElementById('shot-cap');
+  let cur = 0, open = false;
+  stepsEl.innerHTML = W.map((r, i) =>
+    `<button class="step" role="tab" data-i="${i}" aria-label="Request ${r.n}: ${r.title}, ${pct(r.acc)}"><span class="dot" style="background:${AC[r.arch]}"></span>R${r.n}<span class="acc"><i style="width:${r.acc * 100}%;background:${r.acc < .75 ? 'var(--no)' : r.acc < 1 ? 'var(--part)' : 'var(--yes)'}"></i></span></button>`).join('');
+  function setShot(name, text) { img.src = 'shots/' + name + '.png'; img.alt = text; cap.textContent = text; }
+  function render(i, keepOpen) {
+    cur = i; if (!keepOpen) open = false;
+    const r = W[i];
+    stepsEl.querySelectorAll('.step').forEach((b, j) => { b.classList.toggle('on', j === i); b.setAttribute('aria-selected', j === i); });
+    setShot(r.shot, `What the judge saw after request ${r.n}.`);
+    const deps = r.deps.length ? 'builds on ' + r.deps.map(d => 'R' + d).join(', ') : 'the original WebGen-Bench prompt';
+    panel.innerHTML =
+      `<h4>R${r.n} · ${r.title}</h4>` +
+      `<div class="meta"><span class="chip" style="background:${AC[r.arch]}">${AN[r.arch]}</span><span>${deps}</span></div>` +
+      `<div class="req${open ? ' open' : ''}" id="req">${esc(r.text)}</div>` +
+      `<button class="req-toggle" id="req-t">${open ? 'Show less' : 'Show the full request'}</button>` +
+      `<p class="src">Grounded in: ${esc(r.src)}</p>` +
+      `<ul class="checks">` + r.checks.map((c, k) =>
+        `<li class="check${c.shot ? ' clickable' : ''}${c.v !== 'yes' ? ' fail' : ''}" data-k="${k}" tabindex="0" role="button" aria-label="Check ${k + 1}, ${c.v}"><div class="check-top"><span class="v ${c.v}">${c.v.toUpperCase()}</span><span>` +
+        `<span class="ty">${TN[c.t]}${c.from ? ' · copied from R' + c.from : ''}</span><span class="task">${esc(c.task)}</span>` +
+        `<span class="exp">Expected: ${esc(c.exp)}</span>` +
+        (c.note ? `<span class="jnote ${c.v}">${esc(c.note)}</span>` : '') +
+        `</span></div></li>`).join('') + `</ul>` +
+      `<div class="score"><span>accuracy a<sub>${r.n}</sub></span><span class="track"><i style="width:${r.acc * 100}%"></i></span><span>${pct(r.acc)}</span></div>`;
+    document.getElementById('req-t').onclick = () => { open = !open; render(cur, true); };
+    panel.querySelectorAll('.check').forEach(li => {
+      const go = () => {
+        const c = r.checks[+li.dataset.k];
+        li.classList.toggle('show');
+        if (!c.shot) return;
+        panel.querySelectorAll('.check').forEach(x => x.classList.remove('sel')); li.classList.add('sel');
+        setShot(c.shot, `What the judge saw at the end of check ${+li.dataset.k + 1} (${c.v.toUpperCase()}): ${c.task}`);
+      };
+      li.onclick = go; li.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } };
+    });
+    document.getElementById('prev').disabled = i === 0; document.getElementById('next').disabled = i === W.length - 1;
+  }
+  stepsEl.onclick = e => { const b = e.target.closest('.step'); if (b) render(+b.dataset.i); };
+  document.getElementById('prev').onclick = () => cur > 0 && render(cur - 1);
+  document.getElementById('next').onclick = () => cur < W.length - 1 && render(cur + 1);
+  document.getElementById('walk').addEventListener('keydown', e => {
+    if (e.target.closest('.check')) return;
+    if (e.key === 'ArrowRight' && cur < W.length - 1) render(cur + 1);
+    if (e.key === 'ArrowLeft' && cur > 0) render(cur - 1);
+  });
+  W.forEach(r => { const p = new Image(); p.src = 'shots/' + r.shot + '.png'; });
+  render(0);
+
+  /* ---------- Figure 3: tolerance ---------- */
+  const A = W.map(r => r.acc), R = A.length, NS = 'http://www.w3.org/2000/svg';
+  const reachedAt = t => { const g = []; let m = 1; for (let r = 0; r < R; r++) { g.push(m >= t - 1e-9); m = Math.min(m, A[r]); } return g; };
+  const Q = t => reachedAt(t).reduce((s, g, r) => s + (g ? A[r] : 0), 0) / R;
+  const S = t => { let n = 0; for (let r = 0; r < R; r++) { if (A[r] >= t - 1e-9) n++; else break; } return n; };
+  const lad = document.getElementById('ladder'), qc = document.getElementById('qcurve');
+  const el = (tag, at, txt) => { const e = document.createElementNS(NS, tag); for (const k in at) e.setAttribute(k, at[k]); if (txt != null) e.textContent = txt; return e; };
+  // ladder geometry
+  const L = { x0: 34, y0: 14, w: 376, h: 170 }, bw = L.w / R;
+  const yL = v => L.y0 + L.h * (1 - v);
+  [0, .5, 1].forEach(v => { lad.append(el('line', { x1: L.x0, x2: L.x0 + L.w, y1: yL(v), y2: yL(v), stroke: 'rgba(15,27,45,.1)' })); lad.append(el('text', { x: L.x0 - 6, y: yL(v) + 4, 'text-anchor': 'end', 'font-size': 10, fill: 'rgba(15,27,45,.6)' }, (v * 100) + '%')); });
+  const bars = A.map((a, r) => { const b = el('rect', { x: L.x0 + r * bw + 5, y: yL(a), width: bw - 10, height: L.h * a, rx: 2 }); lad.append(b); lad.append(el('text', { x: L.x0 + r * bw + bw / 2, y: L.y0 + L.h + 16, 'text-anchor': 'middle', 'font-size': 10, fill: 'rgba(15,27,45,.6)' }, 'R' + (r + 1))); return b; });
+  const marks = A.map((a, r) => { const t = el('text', { x: L.x0 + r * bw + bw / 2, y: yL(a) - 4, 'text-anchor': 'middle', 'font-size': 9.5, fill: 'rgba(15,27,45,.7)' }, Math.round(a * 100)); lad.append(t); return t; });
+  const tl = el('line', { x1: L.x0 - 2, x2: L.x0 + L.w + 2, stroke: '#1f5fd1', 'stroke-width': 2, 'stroke-dasharray': '5 4' }); lad.append(tl);
+  lad.append(el('text', { x: L.x0, y: L.y0 + L.h + 32, 'font-size': 10, fill: 'rgba(15,27,45,.6)' }, 'accuracy per request · dashed line = t'));
+  // Q curve geometry
+  const C = { x0: 34, y0: 14, w: 250, h: 170 }, xC = t => C.x0 + C.w * t, yC = v => C.y0 + C.h * (1 - v);
+  [0, .5, 1].forEach(v => { qc.append(el('line', { x1: C.x0, x2: C.x0 + C.w, y1: yC(v), y2: yC(v), stroke: 'rgba(15,27,45,.1)' })); qc.append(el('text', { x: C.x0 - 6, y: yC(v) + 4, 'text-anchor': 'end', 'font-size': 10, fill: 'rgba(15,27,45,.6)' }, v.toFixed(1))); });
+  [0, .5, 1].forEach(v => qc.append(el('text', { x: xC(v), y: C.y0 + C.h + 16, 'text-anchor': 'middle', 'font-size': 10, fill: 'rgba(15,27,45,.6)' }, v)));
+  let d = '', area = `M${xC(0)},${yC(0)}`;
+  for (let i = 0; i <= 400; i++) { const t = i / 400, q = Q(t); d += (i ? 'L' : 'M') + xC(t).toFixed(2) + ',' + yC(q).toFixed(2); area += `L${xC(t).toFixed(2)},${yC(q).toFixed(2)}`; }
+  area += `L${xC(1)},${yC(0)}Z`;
+  qc.append(el('path', { d: area, fill: 'rgba(31,95,209,.13)' }));
+  qc.append(el('path', { d, fill: 'none', stroke: '#1f5fd1', 'stroke-width': 2 }));
+  qc.append(el('text', { x: xC(.33), y: yC(.22), 'text-anchor': 'middle', 'font-size': 11, fill: '#1f5fd1' }, 'area = Grade 0.571'));
+  const vl = el('line', { y1: C.y0, y2: C.y0 + C.h, stroke: '#1f5fd1', 'stroke-dasharray': '3 3' }); qc.append(vl);
+  const dot = el('circle', { r: 4.5, fill: '#fff', stroke: '#1f5fd1', 'stroke-width': 2 }); qc.append(dot);
+  qc.append(el('text', { x: C.x0 + C.w / 2, y: C.y0 + C.h + 32, 'text-anchor': 'middle', 'font-size': 10, fill: 'rgba(15,27,45,.6)' }, 'Q(t) as a function of tolerance t'));
+  const range = document.getElementById('tol-range'), out = document.getElementById('tol-out'), say = document.getElementById('tol-say');
+  function upd() {
+    const t = +range.value / 100, g = reachedAt(t), q = Q(t), s = S(t), reached = g.filter(Boolean).length;
+    out.textContent = range.value + '%';
+    bars.forEach((b, r) => b.setAttribute('fill', !g[r] ? 'rgba(15,27,45,.12)' : A[r] >= t - 1e-9 ? '#1f5fd1' : '#c0392b'));
+    marks.forEach((m, r) => m.setAttribute('fill', g[r] ? 'rgba(15,27,45,.75)' : 'rgba(15,27,45,.3)'));
+    tl.setAttribute('y1', yL(t)); tl.setAttribute('y2', yL(t));
+    const stop = g.indexOf(false);
+    vl.setAttribute('x1', xC(t)); vl.setAttribute('x2', xC(t)); dot.setAttribute('cx', xC(t)); dot.setAttribute('cy', yC(q));
+    document.getElementById('s-reach').textContent = reached + ' / 10';
+    document.getElementById('s-surv').textContent = s;
+    document.getElementById('s-q').textContent = q.toFixed(3);
+    say.textContent = reached === R
+      ? (t === 0 ? 'A user who tolerates anything sees all ten requests: Q(0) is plain mean accuracy, 0.883.' : `Every request clears ${range.value}%, so this user stays to the end and gets all ten requests.`)
+      : `The first request below ${range.value}% is R${stop}, scoring ${Math.round(A[stop - 1] * 100)}%. This user sees it and then leaves, so R${stop + 1}–R10 count as zero${stop < 5 ? ', including the recovery at R5' : ''}.`;
+  }
+  range.oninput = upd;
+  document.querySelectorAll('.presets button').forEach(b => b.onclick = () => { range.value = b.dataset.t; upd(); });
+  upd();
+
+  /* ---------- copy buttons ---------- */
+  document.querySelectorAll('[data-copy]').forEach(b => b.onclick = () => {
+    const txt = document.getElementById(b.dataset.copy).innerText;
+    (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => { b.textContent = 'COPIED'; setTimeout(() => b.textContent = 'COPY', 1400); }).catch(() => {});
+  });
+})();
+</script>
+</body>
+</html>
